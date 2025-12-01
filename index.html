@@ -9,24 +9,22 @@
 
 </head>
 <body>
-  <main class="card">
+  <div class="form">
     <h1>Formulário de Cadastro</h1>
-
-    <!-- O formulário aponta para um handler em script.js via onsubmit -->
     <form id="cadastroForm">
       <div class="field">
         <label for="nome">Nome</label>
-        <input type="text" id="nome" name="nome" required autocomplete="name" />
+        <input type="text" id="nome" name="nome"/>
       </div>
 
       <div class="field">
         <label for="idade">Idade</label>
-        <input type="number" id="idade" name="idade" required min="0" />
+        <input type="number" id="idade" name="idade"/>
       </div>
 
       <div class="field">
         <label for="cpf">CPF</label>
-        <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" />
+        <input type="text" id="cpf" name="cpf"/>
       </div>
 
       <div class="field">
@@ -35,15 +33,53 @@
       </div>
 
       <div class="actions">
-        <button type="submit" onclick="cadastrarPaciente()">Cadastrar</button>
-        <button type="submit" onclick="verPaciente()">ver</button>
+        <button type="button-cadastrar" onclick="cadastrarPaciente()">Cadastrar</button>
       </div>
     </form>
-  </main>
+</div>
 
-  <!-- Referência para o arquivo script.js (crie esse arquivo na mesma pasta) -->
+<div class="listar-wrapper">
+    <button onclick="verPacientes()">Listar pacientes</button>
+</div>
+
+<div id="listaPacientes" class="cards-container"></div>
+
   <script>
     const contratoABI = [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "listaPacientes",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "nome",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "idade",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "cpf",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "endereco",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
     {
       "inputs": [
         {
@@ -76,8 +112,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [
@@ -106,35 +141,88 @@
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "verTodosPacientes",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "nome",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "idade",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "cpf",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "endereco",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct ContratoPaciente.Paciente[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     }
 ];
-const contratoEndereco = '0xd3b0a3F5289a90657012d03bBF12bdff756FAD2b';
+const contratoEndereco = '';
 
-
+let indiceConta = 0;
 async function cadastrarPaciente(){
-    const web3 = new Web3('HTTP://127.0.0.1:7545');
-    const contrato = new web3.eth.Contract(contratoABI, contratoEndereco);
-    const nome = document.getElementById('nome').value;
-    const idade = document.getElementById('idade').value;
-    const cpf = document.getElementById('cpf').value;
-    const endereco = document.getElementById('endereco').value;
-    const contas = await web3.eth.getAccounts();
-    contrato.methods.cadastrarPaciente(nome, idade, cpf, endereco).send({from: contas[0]})
-      .send({ from: contas[0] })
-      .then(res => console.log("OK:", res))
-      .catch(err => console.error("ERRO REAL:", err));
+  const web3 = new Web3('HTTP://127.0.0.1:7545');
+  const contrato = new web3.eth.Contract(contratoABI, contratoEndereco);
+
+  const nome = document.getElementById('nome').value;
+  const idade = document.getElementById('idade').value;
+  const cpf = document.getElementById('cpf').value;
+  const endereco = document.getElementById('endereco').value;
+
+  const contas = await web3.eth.getAccounts();
+  const contaUsada = contas[indiceConta];
+
+  contrato.methods.cadastrarPaciente(nome, idade, cpf, endereco)
+  .send({ from: contaUsada, gas: 800000 })
+  .then(res => console.log("OK:", res))
+  .catch(err => console.error("ERRO REAL:", err));
+  indiceConta++;
 }
 
-async function verPaciente() {
-    const web3 = new Web3('HTTP://127.0.0.1:7545');
-    const contrato = new web3.eth.Contract(contratoABI, contratoEndereco);
+async function verPacientes() {
+  const web3 = new Web3('HTTP://127.0.0.1:7545');
+  const contrato = new web3.eth.Contract(contratoABI, contratoEndereco);
 
-    const contas = await web3.eth.getAccounts();
+  const pacientes = await contrato.methods.verTodosPacientes().call();
+    
+  const divLista = document.getElementById("listaPacientes");
+  divLista.innerHTML = "";
+  if (pacientes.length === 0) {
+    divLista.innerHTML = "<p>Nenhum paciente cadastrado.</p>";
+    return;
+  }
 
-    const paciente = await contrato.methods.pacientes(contas[0]).call();
-
-    console.log(paciente);
-    alert(`Nome: ${paciente.nome}\nIdade: ${paciente.idade}\nCPF: ${paciente.cpf}`);
+   pacientes.forEach((p, i) => {
+    divLista.innerHTML += `
+      <div class="card">
+          <h3>Paciente #${i + 1}</h3>
+          <p><strong>Nome:</strong> ${p.nome}</p>
+          <p><strong>Idade:</strong> ${p.idade}</p>
+          <p><strong>CPF:</strong> ${p.cpf}</p>
+          <p><strong>Endereço:</strong> ${p.endereco}</p>
+      </div>`;
+  });
 }
   </script>
 </body>

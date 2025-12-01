@@ -12,8 +12,8 @@ contract ContratoPaciente {
     }
 
     mapping(address => Paciente) public pacientes;
-    mapping(string => bool) private cpfJaCadastrado;
-
+    mapping(bytes32 => bool) private cpfJaCadastrado;
+    Paciente[] public listaPacientes;
 
     function _ehIdadeValida(uint _idade) private pure returns (bool) {
         return _idade >= 12;
@@ -24,7 +24,7 @@ contract ContratoPaciente {
     }
 
     function _validaCPF ( string memory _cpf) private pure returns (bool) {
-        return bytes(_cpf).length == 12 && bytes(_cpf).length != 0;
+        return bytes(_cpf).length == 11;
     }
 
     function _ehPacienteValido(Paciente memory _paciente) private pure returns (bool) {
@@ -32,7 +32,8 @@ contract ContratoPaciente {
     }
 
     function cadastrarPaciente(string memory _nome, uint _idade, string memory _cpf, string memory _endereco) public {
-        require(!cpfJaCadastrado[_cpf], "CPF ja cadastrado por outro paciente!");
+        bytes32 cpfHash = keccak256(abi.encodePacked(_cpf));
+        require(!cpfJaCadastrado[cpfHash], "CPF ja cadastrado por outro paciente!");
         Paciente memory paciente;
         paciente.nome = _nome;
         paciente.idade = _idade;
@@ -41,10 +42,14 @@ contract ContratoPaciente {
 
         if (_ehPacienteValido(paciente)) {
             pacientes[msg.sender] = paciente;
-            cpfJaCadastrado[_cpf] = true;
+            cpfJaCadastrado[cpfHash] = true;
+            listaPacientes.push(paciente);
         } else {
             revert("Os dados fornecidos nao sao validos para cadastro!");
         }
     }
 
+    function verTodosPacientes() public view returns (Paciente[] memory) {
+        return listaPacientes;
+    }
 }
