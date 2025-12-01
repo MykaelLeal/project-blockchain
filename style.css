@@ -107,3 +107,21 @@ button:active { transform: translateY(1px); }
   justify-content: center;
   gap: 16px;  
 }
+
+.buscar-cpf-container {
+  display: none;
+  margin-top: 15px;
+}
+
+.input-cpf {
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 220px;
+}
+
+.resultado-busca p {
+  color: #000;
+  font-size: 16px;
+}
